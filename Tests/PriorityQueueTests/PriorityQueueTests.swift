@@ -361,6 +361,12 @@ final class PriorityQueueTests: XCTestCase {
     }
     
     func testDequeueEnqueue() {
+        // when empty, then return nil and store new element:
+        XCTAssertTrue(sut.isEmpty)
+        let newElement = Int.random(in: Int.min..<Int.max)
+        XCTAssertNil(sut.dequeueEnqueue(newElement))
+        XCTAssertEqual(sut.storage?.withUnsafeBufferPointer { Array($0) }, [newElement])
+        
         // Leveraging on HeapBuffer's extract method, we just need to
         // test C.O.W. for value semantics:
         let notEmptyElements = [1, 2, 3, 4, 5]
