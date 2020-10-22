@@ -203,7 +203,7 @@ final class PriorityQueueTests: XCTestCase {
         XCTAssertTrue(sut.isEmpty)
         XCTAssertNil(sut.storage)
         var other = PriorityQueue<Int>()
-        sut.enqueue(elements: other)
+        sut.enqueue(contentsOf: other)
         XCTAssertTrue(sut.isEmpty)
         XCTAssertNil(sut.storage)
         
@@ -211,7 +211,7 @@ final class PriorityQueueTests: XCTestCase {
         // in max heap order:
         let otherElements = [10, 20, 30, 40]
         other = PriorityQueue(otherElements)
-        sut.enqueue(elements: other)
+        sut.enqueue(contentsOf: other)
         var done: Bool = sut.storage?.withUnsafeBufferPointer { buff in
             for element in otherElements {
                 XCTAssertTrue(buff.contains(element), "element \(element) was not inserted")
@@ -225,7 +225,7 @@ final class PriorityQueueTests: XCTestCase {
         // inserted and max heap order is maintained:
         let notEmptyElements = [1, 2, 3, 4, 5]
         sut = PriorityQueue(notEmptyElements)
-        sut.enqueue(elements: other)
+        sut.enqueue(contentsOf: other)
         let allElements = notEmptyElements + otherElements
         done = sut.storage?.withUnsafeBufferPointer { buff in
             for element in allElements {
@@ -241,14 +241,14 @@ final class PriorityQueueTests: XCTestCase {
         XCTAssertTrue(other.isEmpty)
         XCTAssertFalse(sut.isEmpty)
         let prevContainedElements = sut.storage!.withUnsafeBufferPointer { Array($0) }
-        sut.enqueue(elements: other)
+        sut.enqueue(contentsOf: other)
         XCTAssertEqual(sut.storage?.withUnsafeBufferPointer { Array($0) }, prevContainedElements)
         
         // let's now test C.O.W. for value semantics:
         other = PriorityQueue(otherElements)
         XCTAssertFalse(other.isEmpty)
         var copy = sut!
-        assertCOW(using: &copy, in: { $0.enqueue(elements: other) })
+        assertCOW(using: &copy, in: { $0.enqueue(contentsOf: other) })
     }
     
     func testEnqueueSequence_whenSequenceIsNotAnotherPriorityQueue() {
@@ -256,20 +256,20 @@ final class PriorityQueueTests: XCTestCase {
         XCTAssertTrue(sut.isEmpty)
         XCTAssertNil(sut.storage)
         var other: [Int] = []
-        sut.enqueue(elements: other)
+        sut.enqueue(contentsOf: other)
         XCTAssertTrue(sut.isEmpty)
         XCTAssertNil(sut.storage)
         // same with a sequence not implementing withContiguousBufferIfAvailable(_:)
         XCTAssertTrue(sut.isEmpty)
         XCTAssertNil(sut.storage)
-        sut.enqueue(elements: MyTestSequence(other, hasUnderestimatedCount: true, hasContiguousBuffer: false))
+        sut.enqueue(contentsOf: MyTestSequence(other, hasUnderestimatedCount: true, hasContiguousBuffer: false))
         XCTAssertTrue(sut.isEmpty)
         XCTAssertNil(sut.storage)
         
         // when is empty, and other is not empty, then all other's elements are inserted
         // in max heap order:
         other = [10, 20, 30, 40]
-        sut.enqueue(elements: other)
+        sut.enqueue(contentsOf: other)
         var done: Bool = sut.storage?.withUnsafeBufferPointer { buff in
             for element in other {
                 XCTAssertTrue(buff.contains(element), "element \(element) was not inserted")
@@ -282,7 +282,7 @@ final class PriorityQueueTests: XCTestCase {
         sut = PriorityQueue()
         XCTAssertTrue(sut.isEmpty)
         XCTAssertNil(sut.storage)
-        sut.enqueue(elements: MyTestSequence(other, hasUnderestimatedCount: true, hasContiguousBuffer: false))
+        sut.enqueue(contentsOf: MyTestSequence(other, hasUnderestimatedCount: true, hasContiguousBuffer: false))
         done = sut.storage?.withUnsafeBufferPointer { buff in
             for element in other {
                 XCTAssertTrue(buff.contains(element), "element \(element) was not inserted")
@@ -296,7 +296,7 @@ final class PriorityQueueTests: XCTestCase {
         // inserted and max heap order is maintained:
         let notEmptyElements = [1, 2, 3, 4, 5]
         sut = PriorityQueue(notEmptyElements)
-        sut.enqueue(elements: other)
+        sut.enqueue(contentsOf: other)
         let allElements = notEmptyElements + other
         done = sut.storage?.withUnsafeBufferPointer { buff in
             for element in allElements {
@@ -308,7 +308,7 @@ final class PriorityQueueTests: XCTestCase {
         assertElementsAreInMaxHeapOrder()
         // same with a sequence not implementing withContiguousBufferIfAvailable(_:)
         sut = PriorityQueue(notEmptyElements)
-        sut.enqueue(elements: MyTestSequence(other, hasUnderestimatedCount: true, hasContiguousBuffer: false))
+        sut.enqueue(contentsOf: MyTestSequence(other, hasUnderestimatedCount: true, hasContiguousBuffer: false))
         done = sut.storage?.withUnsafeBufferPointer { buff in
             for element in allElements {
                 XCTAssertTrue(buff.contains(element), "element \(element) was not inserted")
@@ -323,16 +323,16 @@ final class PriorityQueueTests: XCTestCase {
         XCTAssertTrue(other.isEmpty)
         XCTAssertFalse(sut.isEmpty)
         let prevContainedElements = sut.storage!.withUnsafeBufferPointer { Array($0) }
-        sut.enqueue(elements: other)
+        sut.enqueue(contentsOf: other)
         XCTAssertEqual(sut.storage?.withUnsafeBufferPointer { Array($0) }, prevContainedElements)
         // same with a sequence not implementing withContiguousBufferIfAvailable(_:)
-        sut.enqueue(elements: MyTestSequence([], hasUnderestimatedCount: true, hasContiguousBuffer: false))
+        sut.enqueue(contentsOf: MyTestSequence([], hasUnderestimatedCount: true, hasContiguousBuffer: false))
         XCTAssertEqual(sut.storage?.withUnsafeBufferPointer { Array($0) }, prevContainedElements)
         
         // let's now test C.O.W. for value semantics:
         sut = PriorityQueue(notEmptyElements)
         var copy = sut!
-        assertCOW(using: &copy, in: { $0.enqueue(elements: other) })
+        assertCOW(using: &copy, in: { $0.enqueue(contentsOf: other) })
     }
     
     func testDequeue() {
@@ -360,13 +360,13 @@ final class PriorityQueueTests: XCTestCase {
         XCTAssertNil(sut.storage)
     }
     
-    func testReplace() {
+    func testDequeueEnqueue() {
         // Leveraging on HeapBuffer's extract method, we just need to
         // test C.O.W. for value semantics:
         let notEmptyElements = [1, 2, 3, 4, 5]
         sut = PriorityQueue(notEmptyElements)
         var copy = sut!
-        assertCOW(using: &copy, in: { $0.replace(10) })
+        assertCOW(using: &copy, in: { $0.dequeueEnqueue(10) })
     }
     
     func testRemove() {
