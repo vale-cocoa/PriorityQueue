@@ -19,6 +19,7 @@
 //
 
 import HeapBuffer
+import Dispatch
 
 /// A queue data structure — with value semantics— whose elements are dequeued by priority order, which is associated to
 /// the value of the elements themself.
@@ -229,10 +230,6 @@ extension PriorityQueue: IteratorProtocol, Sequence {
     
     public mutating func next() -> Element? {
         dequeue()
-    }
-    
-    public func makeIterator() -> Self {
-        self
     }
     
 }

@@ -732,9 +732,7 @@ struct ArrayBasedPQ<Element: Comparable>: IteratorProtocol, Sequence {
         storage.heapExtract(heapType: .maxHeap)
     }
     
-    func makeIterator() -> Self {
-        self
-    }
+    typealias Iterator = Self
     
     var underestimatedCount: Int { storage.count }
     
@@ -830,7 +828,6 @@ extension Array where Element: Comparable {
             swapAt(parent, candidate)
             parent = candidate
         }
-        
     }
     
     fileprivate func _leftChild(of parent: Int) -> Int { (parent * 2) + 1 }
