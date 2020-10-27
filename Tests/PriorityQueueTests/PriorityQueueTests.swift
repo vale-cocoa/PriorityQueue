@@ -110,6 +110,14 @@ final class PriorityQueueTests: XCTestCase {
         XCTAssertEqual(sut.underestimatedCount, sut.storage!.count)
     }
     
+    func testCount() {
+        XCTAssertEqual(sut.count, sut.underestimatedCount)
+        
+        let notEmptyElements = [1, 2, 3, 4, 5]
+        sut = PriorityQueue(notEmptyElements)
+        XCTAssertEqual(sut.count, sut.underestimatedCount)
+    }
+    
     func testIsEmpty() {
         XCTAssertNil(sut.storage)
         XCTAssertTrue(sut.isEmpty)
@@ -119,6 +127,27 @@ final class PriorityQueueTests: XCTestCase {
         XCTAssertEqual(sut.isEmpty, sut.storage?.isEmpty)
         XCTAssertGreaterThan(sut.underestimatedCount, 0)
         XCTAssertFalse(sut.isEmpty)
+    }
+    
+    func testCapacity() {
+        XCTAssertNil(sut.storage)
+        XCTAssertEqual(sut.capacity, 0)
+        
+        let notEmptyElements = [1, 2, 3, 4, 5]
+        sut = PriorityQueue(notEmptyElements)
+        XCTAssertEqual(sut.capacity, sut.storage?.capacity)
+    }
+    
+    func testIsFull() {
+        XCTAssertNil(sut.storage)
+        XCTAssertTrue(sut.isFull)
+        let notEmptyElements = [1, 2, 3, 4, 5]
+        sut = PriorityQueue(notEmptyElements)
+        XCTAssertGreaterThan(sut.capacity, sut.count)
+        XCTAssertFalse(sut.isFull)
+        sut.enqueue(contentsOf: 6...8)
+        XCTAssertEqual(sut.capacity, sut.count)
+        XCTAssertTrue(sut.isFull)
     }
     
     // MARK: - IteratorProtocol and Sequence tests
@@ -447,6 +476,41 @@ final class PriorityQueueTests: XCTestCase {
         sut = PriorityQueue(notEmptyElements)
         copy = sut!
         assertCOW(using: &copy, in: { $0.clear(keepingCapacity: true) })
+    }
+    
+    func testReserveCapacity() {
+        // when empty
+        XCTAssertNil(sut.storage)
+        sut.reserveCapacity(0)
+        XCTAssertNil(sut.storage)
+        sut.reserveCapacity(1)
+        XCTAssertNotNil(sut.storage)
+        XCTAssertGreaterThanOrEqual(sut.capacity, 1)
+        
+        var prevCapacity = sut.capacity
+        var prevStorage = sut.storage
+        sut.reserveCapacity(prevCapacity - sut.count)
+        XCTAssertEqual(sut.capacity, prevCapacity)
+        XCTAssertTrue(sut.storage === prevStorage)
+        sut.reserveCapacity(sut.capacity - sut.count + 1)
+        XCTAssertGreaterThan(sut.capacity, prevCapacity)
+        XCTAssertFalse(sut.storage === prevStorage)
+        
+        // when not empty
+        let notEmptyElements = [1, 2, 3, 4, 5]
+        sut = PriorityQueue(notEmptyElements)
+        prevCapacity = sut.capacity
+        prevStorage = sut.storage
+        sut.reserveCapacity(sut.capacity - sut.count)
+        XCTAssertEqual(sut.capacity, prevCapacity)
+        XCTAssertTrue(sut.storage === prevStorage)
+        sut.reserveCapacity(sut.capacity - sut.count + 1)
+        XCTAssertGreaterThan(sut.capacity, prevCapacity)
+        XCTAssertFalse(sut.storage === prevStorage)
+        
+        // C.O.W. for value semantics:
+        var copy = sut!
+        assertCOW(using: &copy, in: { $0.reserveCapacity($0.capacity - $0.count + 1) })
     }
     
     // MARK: - Equatable and Hashable conformances tests

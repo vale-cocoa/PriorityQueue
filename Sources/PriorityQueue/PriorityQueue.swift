@@ -71,12 +71,48 @@ extension PriorityQueue {
     /// - Complexity: O(1)
     public var underestimatedCount: Int { storage?.count ?? 0 }
     
-    /// Flags if there are or not stored elements.
+    /// The number of stored elements.
     ///
-    /// - Note: `true` when `underestimatedCount == 0`, `false` for `underestimatedCount` values
-    ///         greater than `0`.
+    /// - Complexity: O(1)
+    public var count: Int { underestimatedCount }
+    
+    /// A Boolean value indicating whether the queue is empty.
+    ///
     /// - Complexity: O(1)
     public var isEmpty: Bool { storage?.isEmpty ?? true }
+    
+    /// The total number of elements that the instance can contain without
+    /// allocating new storage.
+    ///
+    /// Every instance reserves a specific amount of memory to hold its contents.
+    /// When you add elements to a PriorityQueue instance and that instance begins to exceed its
+    /// reserved capacity, the instance allocates a larger region of memory and
+    /// copies its elements into the new storage. The new storage is a multiple
+    /// of the old storage's size. This exponential growth strategy means that
+    /// enqueueing an element happens in constant time, averaging the performance
+    /// of many enqueue operations. Enqueue operations that trigger reallocation
+    /// have a performance cost, but they occur less and less often as the instance
+    /// grows larger.
+    ///
+    /// The following example creates a PriorityQueue of integers from an array,
+    /// then enqueue the elements of another collection. Before appending, the
+    /// instance allocates new storage that is large enough store the resulting
+    /// elements.
+    ///
+    ///     let pq = PriorityQueue([10, 20, 30, 40])
+    ///     // pq.count == 4
+    ///     // pq.capacity == 4
+    ///
+    ///     pq.enqueue(contentsOf: [50, 60, 70, 80])
+    ///     // pq.count == 8
+    ///     // pq.capacity == 8
+    /// - Complexity: O(1)
+    public var capacity: Int { storage?.capacity ?? 0 }
+    
+    /// A Boolean value indicating whether the heap buffer storage is full.
+    ///
+    /// - Complexity: O(1)
+    public var isFull: Bool { storage?.isFull ?? true }
     
 }
 
@@ -112,7 +148,7 @@ extension PriorityQueue {
             
             _makeUnique(reservingCapacity: other.storage!.count)
             other.storage!.withUnsafeBufferPointer { otherBuff in
-                self.storage!.insert(elements: otherBuff, at: underestimatedCount)
+                self.storage!.insert(contentsOf: otherBuff, at: underestimatedCount)
             }
             
             return
@@ -121,7 +157,7 @@ extension PriorityQueue {
         _makeUnique(reservingCapacity: newElements.underestimatedCount)
         let done = newElements
             .withContiguousStorageIfAvailable { buff in
-                storage!.insert(elements: buff, at: underestimatedCount)
+                storage!.insert(contentsOf: buff, at: underestimatedCount)
                 
                 return true
             } ?? false
@@ -220,6 +256,29 @@ extension PriorityQueue {
         }
         
         storage!.remove(at: storage!.startIndex, count: storage!.count, keepingCapacity: true)
+    }
+    
+    /// Reserves enough space to store the specified number of elements.
+    ///
+    /// If you are adding a known number of elements to a queue, use this method
+    /// to avoid multiple reallocations. This method ensures that the queue has
+    /// unique, mutable, contiguous storage, with space allocated for at least
+    /// the requested number of elements.
+    ///
+    /// For performance reasons, the size of the newly allocated storage might be
+    /// greater than the requested capacity. Use the queue's `capacity` property
+    /// to determine the size of the new storage.
+    ///
+    /// - Parameter _: The requested number of elements to store. **Must not be negative.**
+    /// - Complexity: O(*n*), where *n* is the number of elements in the queue.
+    public mutating func reserveCapacity(_ minimumCapacity: Int) {
+        precondition(minimumCapacity >= 0)
+        guard
+            minimumCapacity > 0,
+            (capacity - count) < minimumCapacity
+        else { return }
+        
+        _makeUnique(reservingCapacity: minimumCapacity)
     }
     
 }
