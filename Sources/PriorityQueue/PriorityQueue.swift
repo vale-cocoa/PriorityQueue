@@ -19,6 +19,7 @@
 //
 
 import HeapBuffer
+import Queue
 
 /// A queue data structure — with value semantics— whose elements are dequeued by priority order, which is associated to
 /// the value of the elements themself.
@@ -65,82 +66,45 @@ public struct PriorityQueue<Element: Comparable> {
 // MARK: - Public Interface
 // MARK: - Computed properties
 extension PriorityQueue {
-    /// The number of stored elements.
-    ///
-    /// - Complexity: O(1)
     public var underestimatedCount: Int { storage?.count ?? 0 }
     
-    /// The number of stored elements.
-    ///
-    /// - Complexity: O(1)
     public var count: Int { underestimatedCount }
     
-    /// A Boolean value indicating whether the queue is empty.
-    ///
-    /// - Complexity: O(1)
     public var isEmpty: Bool { storage?.isEmpty ?? true }
     
-    /// The total number of elements that the instance can contain without
-    /// allocating new storage.
-    ///
-    /// Every instance reserves a specific amount of memory to hold its contents.
-    /// When you add elements to a PriorityQueue instance and that instance begins to exceed its
-    /// reserved capacity, the instance allocates a larger region of memory and
-    /// copies its elements into the new storage. The new storage is a multiple
-    /// of the old storage's size. This exponential growth strategy means that
-    /// enqueueing an element happens in constant time, averaging the performance
-    /// of many enqueue operations. Enqueue operations that trigger reallocation
-    /// have a performance cost, but they occur less and less often as the instance
-    /// grows larger.
-    ///
-    /// The following example creates a PriorityQueue of integers from an array,
-    /// then enqueue the elements of another collection. Before appending, the
-    /// instance allocates new storage that is large enough store the resulting
-    /// elements.
-    ///
-    ///     let pq = PriorityQueue([10, 20, 30, 40])
-    ///     // pq.count == 4
-    ///     // pq.capacity == 4
-    ///
-    ///     pq.enqueue(contentsOf: [50, 60, 70, 80])
-    ///     // pq.count == 8
-    ///     // pq.capacity == 8
-    /// - Complexity: O(1)
     public var capacity: Int { storage?.capacity ?? 0 }
     
-    /// A Boolean value indicating whether the heap buffer storage is full.
-    ///
-    /// - Complexity: O(1)
     public var isFull: Bool { storage?.isFull ?? true }
     
 }
 
+// MARK: - IteratorProtocol and Sequence conformances
+extension PriorityQueue: IteratorProtocol, Sequence {
+    public typealias Iterator = Self
+    
+    public mutating func next() -> Element? {
+        _makeUnique()
+        defer {
+            _checkForEmptyAtEndOfMutation()
+        }
+        
+        return storage!.extract()
+    }
+    
+}
+
 // MARK: - Queue operations
-extension PriorityQueue {
-    /// Returns (without removing it), the next element that will be dequeued when present, otherwise `nil`
-    ///
-    /// - Returns: the next element to be dequeued, when present, otherwise `nil`
-    /// - Complexity: O(1)
+extension PriorityQueue: Queue {
     @discardableResult
     public func peek() -> Element? {
         storage?.peek()
     }
     
-    /// Stores specified element in this instance, inserting it at appropriate position for its value in regards to other
-    ///  stored elements.
-    ///
-    /// - Parameter _: the element to store.
-    ///- Complexity: O(log *n*) where *n* is the number of stored elements after the insertion operation.
     public mutating func enqueue(_ newElement: Element) {
         _makeUnique()
         storage!.insert(newElement)
     }
     
-    /// Stores all elements contained in given sequence in this instance, inserting them at appropriate positions
-    /// in regards to each other and contained values.
-    ///
-    /// - Parameter contentsOf: the sequence of elements to store.
-    /// - Complexity: O(log *n*) where *n* is the number of stored elements after the insertion operation.
     public mutating func enqueue<S: Sequence>(contentsOf newElements: S) where S.Iterator.Element == Element {
         if let other = newElements as? Self {
             guard !other.isEmpty else { return }
@@ -170,20 +134,38 @@ extension PriorityQueue {
         _checkForEmptyAtEndOfMutation()
     }
     
-    /// Removes and returns, if not empty, the stored element with the highest priority, otherwise `nil`.
-    ///
-    /// - Returns: the stored element with highest priority, otherwise `nil`.
-    /// - Complexity: O(log *n*) where *n* is the count of stored elements after the removal.
     @discardableResult
     public mutating func dequeue() -> Element? {
-        _makeUnique()
-        defer {
-            _checkForEmptyAtEndOfMutation()
-        }
-        
-        return storage!.extract()
+        next()
     }
     
+    public mutating func clear(keepingCapacity keepCapacity: Bool = false) {
+        guard storage != nil else { return }
+        
+        _makeUnique()
+        guard keepCapacity else {
+            storage = nil
+            
+            return
+        }
+        
+        storage!.remove(at: storage!.startIndex, count: storage!.count, keepingCapacity: true)
+    }
+    
+    public mutating func reserveCapacity(_ minimumCapacity: Int) {
+        precondition(minimumCapacity >= 0)
+        guard
+            minimumCapacity > 0,
+            (capacity - count) < minimumCapacity
+        else { return }
+        
+        _makeUnique(reservingCapacity: minimumCapacity)
+    }
+    
+}
+
+// MARK: - Specific functionalities for Priority Queue
+extension PriorityQueue {
     /// Enqueues given element, then dequeues.
     ///
     /// This method is in average faster than doing the two operations sequentially in separate steps.
@@ -238,56 +220,6 @@ extension PriorityQueue {
         guard let idx = storage!.indexOf(element) else { return nil }
         
         return storage!.remove(at: idx)
-    }
-    
-    /// Removes all stored elements, eventually keeping the storage capacity if so specified.
-    ///
-    /// - Parameter keepingCapacity:    when set to `true`, the storage doesn't reduce its capacity.
-    ///                                 Deafults to `false`.
-    public mutating func clear(keepingCapacity keepCapacity: Bool = false) {
-        guard storage != nil else { return }
-        
-        _makeUnique()
-        guard keepCapacity else {
-            storage = nil
-            
-            return
-        }
-        
-        storage!.remove(at: storage!.startIndex, count: storage!.count, keepingCapacity: true)
-    }
-    
-    /// Reserves enough space to store the specified number of elements.
-    ///
-    /// If you are adding a known number of elements to a queue, use this method
-    /// to avoid multiple reallocations. This method ensures that the queue has
-    /// unique, mutable, contiguous storage, with space allocated for at least
-    /// the requested number of elements.
-    ///
-    /// For performance reasons, the size of the newly allocated storage might be
-    /// greater than the requested capacity. Use the queue's `capacity` property
-    /// to determine the size of the new storage.
-    ///
-    /// - Parameter _: The requested number of elements to store. **Must not be negative.**
-    /// - Complexity: O(*n*), where *n* is the number of elements in the queue.
-    public mutating func reserveCapacity(_ minimumCapacity: Int) {
-        precondition(minimumCapacity >= 0)
-        guard
-            minimumCapacity > 0,
-            (capacity - count) < minimumCapacity
-        else { return }
-        
-        _makeUnique(reservingCapacity: minimumCapacity)
-    }
-    
-}
-
-// MARK: - IteratorProtocol and Sequence conformances
-extension PriorityQueue: IteratorProtocol, Sequence {
-    public typealias Iterator = Self
-    
-    public mutating func next() -> Element? {
-        dequeue()
     }
     
 }
