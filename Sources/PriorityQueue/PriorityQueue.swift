@@ -64,10 +64,20 @@ public struct PriorityQueue<Element: Comparable> {
 }
 
 // MARK: - Public Interface
-// MARK: - Computed properties
-extension PriorityQueue {
+// MARK: - IteratorProtocol and Sequence conformances
+extension PriorityQueue: IteratorProtocol, Sequence {
+    public typealias Iterator = Self
+    
     public var underestimatedCount: Int { storage?.count ?? 0 }
     
+    public mutating func next() -> Element? {
+        dequeue()
+    }
+    
+}
+
+// MARK: - Queue conformance
+extension PriorityQueue: Queue {
     public var count: Int { underestimatedCount }
     
     public var isEmpty: Bool { storage?.isEmpty ?? true }
@@ -76,25 +86,6 @@ extension PriorityQueue {
     
     public var isFull: Bool { storage?.isFull ?? true }
     
-}
-
-// MARK: - IteratorProtocol and Sequence conformances
-extension PriorityQueue: IteratorProtocol, Sequence {
-    public typealias Iterator = Self
-    
-    public mutating func next() -> Element? {
-        _makeUnique()
-        defer {
-            _checkForEmptyAtEndOfMutation()
-        }
-        
-        return storage!.extract()
-    }
-    
-}
-
-// MARK: - Queue operations
-extension PriorityQueue: Queue {
     @discardableResult
     public func peek() -> Element? {
         storage?.peek()
@@ -136,8 +127,14 @@ extension PriorityQueue: Queue {
     
     @discardableResult
     public mutating func dequeue() -> Element? {
-        next()
+        _makeUnique()
+        defer {
+            _checkForEmptyAtEndOfMutation()
+        }
+        
+        return storage!.extract()
     }
+    
     
     public mutating func clear(keepingCapacity keepCapacity: Bool = false) {
         guard storage != nil else { return }
@@ -164,7 +161,7 @@ extension PriorityQueue: Queue {
     
 }
 
-// MARK: - Specific functionalities for Priority Queue
+// MARK: - Priority Queue specific functionalities
 extension PriorityQueue {
     /// Enqueues given element, then dequeues.
     ///

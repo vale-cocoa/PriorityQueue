@@ -1,0 +1,25 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "HeapBuffer",
+        "repositoryURL": "https://github.com/vale-cocoa/HeapBuffer.git",
+        "state": {
+          "branch": null,
+          "revision": "55b1d2704c89951dfde02d248b38ea6a615eddc4",
+          "version": "1.0.7"
+        }
+      },
+      {
+        "package": "Queue",
+        "repositoryURL": "https://github.com/vale-cocoa/Queue.git",
+        "state": {
+          "branch": null,
+          "revision": "a637ca91d35b13a35a61a287eca08c23cadbec7e",
+          "version": "1.0.1"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
