@@ -491,11 +491,13 @@ final class PriorityQueueTests: XCTestCase {
     
     func testReserveCapacity() {
         // when empty
+        var prevCapacity = sut.capacity
         sut.reserveCapacity(0)
+        XCTAssertEqual(sut.capacity, prevCapacity)
         sut.reserveCapacity(1)
         XCTAssertGreaterThanOrEqual(sut.capacity, 1)
         
-        var prevCapacity = sut.capacity
+        prevCapacity = sut.capacity
         var prevStorage = sut.storage
         sut.reserveCapacity(prevCapacity - sut.count)
         XCTAssertEqual(sut.capacity, prevCapacity)
@@ -515,6 +517,9 @@ final class PriorityQueueTests: XCTestCase {
         sut.reserveCapacity(sut.capacity - sut.count + 1)
         XCTAssertGreaterThan(sut.capacity, prevCapacity)
         XCTAssertFalse(sut.storage === prevStorage)
+        sut.withContiguousStorageIfAvailable({ buffer in
+            XCTAssertTrue(buffer.elementsEqual(notEmptyElements))
+        })
         
         // C.O.W. for value semantics:
         var copy = sut!
