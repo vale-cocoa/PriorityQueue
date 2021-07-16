@@ -122,17 +122,6 @@ extension PriorityQueue: Queue {
     }
     
     public mutating func enqueue<S: Sequence>(contentsOf newElements: S) where S.Iterator.Element == Element {
-        if let other = newElements as? Self {
-            guard !other.isEmpty else { return }
-            
-            _makeUnique(reservingCapacity: other.storage.count)
-            other.storage.withUnsafeBufferPointer { otherBuff in
-                self.storage.insert(contentsOf: otherBuff, at: underestimatedCount)
-            }
-            
-            return
-        }
-        
         _makeUnique(reservingCapacity: newElements.underestimatedCount)
         let done = newElements
             .withContiguousStorageIfAvailable { buff in
