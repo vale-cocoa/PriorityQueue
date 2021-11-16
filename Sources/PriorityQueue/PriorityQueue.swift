@@ -238,6 +238,22 @@ extension PriorityQueue: CustomStringConvertible, CustomDebugStringConvertible {
     
 }
 
+// MARK: - MinPQ and MaxPQ factory
+extension PriorityQueue where Element: Comparable {
+    public static var minPQ: Self { Self.init(sort: <) }
+    
+    public static var maxPQ: Self { Self.init(sort: >) }
+    
+    public static func minPQ<S: Sequence>(_ elements: S) -> Self where S.Iterator.Element == Element {
+        Self.init(elements, sort: <)
+    }
+    
+    public static func maxPQ<S: Sequence>(_ elements: S) -> Self where S.Iterator.Element == Element {
+        Self.init(elements, sort: >)
+    }
+    
+}
+
 // MARK: - Private Interface
 // MARK: - Copy On Write helpers
 extension PriorityQueue {
